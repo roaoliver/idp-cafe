@@ -1,4 +1,4 @@
-FROM cafe:0.1
+FROM ronanoliveira/cafe:0.1
 
     # adicione um ip válido
 ENV IP=20.10.2.3 \
@@ -16,7 +16,7 @@ ENV IP=20.10.2.3 \
     LDAPSERVERPORT=389 \
     LDAPDN=dc=pop-pi,dc=rnp,dc=br \
     LDAPUSER=cn=leitor-shib,dc=pop-pi,dc=rnp,dc=br \
-    LDAPPWD=leitor-shib \
+    LDAPPWD=senha \
     # Se optar por fazer login por email use mail
     LDAPATTR=uid \
     # Digite a url para a pagina de recuperacao de senha (ex.: https://urlpaginarecuperacaodesenha.instituicao.br)
