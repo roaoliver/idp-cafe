@@ -1,0 +1,91 @@
+##
+## Velocity Template for DisplayUsernamePasswordPage view-state
+##
+## Velocity context will contain the following properties
+## flowExecutionUrl - the form action location
+## flowRequestContext - the Spring Web Flow RequestContext
+## flowExecutionKey - the SWF execution key (this is built into the flowExecutionUrl)
+## profileRequestContext - root of context tree
+## authenticationContext - context with authentication request information
+## authenticationErrorContext - context with login error state
+## authenticationWarningContext - context with login warning state
+## ldapResponseContext - context with LDAP state (if using native LDAP)
+## rpUIContext - the context with SP UI information from the metadata
+## extendedAuthenticationFlows - collection of "extended" AuthenticationFlowDescriptor objects
+## passwordPrincipals - contents of the shibboleth.authn.Password.PrincipalOverride bean
+## encoder - HTMLEncoder class
+## request - HttpServletRequest
+## response - HttpServletResponse
+## environment - Spring Environment object for property resolution
+## custom - arbitrary object injected by deployer
+##
+#set ($rpContext = $profileRequestContext.getSubcontext('net.shibboleth.idp.profile.context.RelyingPartyContext'))
+#set ($username = $authenticationContext.getSubcontext('net.shibboleth.idp.authn.context.UsernamePasswordContext', true).getUsername())
+#set ($passwordEnabled = false)
+#if (!$passwordPrincipals or $passwordPrincipals.isEmpty() or $authenticationContext.isAcceptable($passwordPrincipals))
+#set ($passwordEnabled = true)
+#end
+##
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>$environment.getProperty("idp.name","") - #springMessageText("idp.title", "Web Login Service")</title>
+  <link rel="stylesheet" type="text/css" href="$request.getContextPath()/api/bootstrap/4.1.3/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="$request.getContextPath()/css/restyles.css" type="text/css">
+  <link rel="stylesheet" type="text/css" href="$request.getContextPath()/api/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body  class="bg-light login-idp">
+  <div class="bg-light">
+    <div class="container text-center py-5">
+      <div class="container rounded border p-5 bg-white shadow text-center text-muted col-lg-5">
+
+        <p class="mb-0">Acesso pela instituição:</p>
+        <div class="login-logo text-center mb-3">
+	    <img src="$request.getContextPath()#springMessageText("idp.logo")" alt="#springMessageText("idp.logo.alt-text", "logo")">
+	</div>
+        #parse("login-error.vm")
+	<form class="text-left" id="form" role="form" action="$flowExecutionUrl" method="post">
+	    #parse("csrf/csrf.vm")
+            #if ($passwordEnabled)
+        	<div class="form-group">
+            	    <label for="username">#springMessageText("idp.login.username.label", "Seu usuário")</label>
+            	    <input class="form-control" aria-describedby="emailHelp" id="username" name="j_username" type="text" value="#if($username)$encoder.encodeForHTML($username)#end">
+        	</div>
+        	<div class="form-group">
+            	    <label for="password">Senha</label>
+            	    <input class="form-control" id="password" name="j_password" type="password" value="">
+        	</div>
+        	<div class="form-group form-check">
+	    	    <!--Por padrao sempre cacheia-->
+            	    <input type="checkbox" class="form-check-input" id="cache" name="donotcache" value="0">
+	    	    <input type="hidden" name="donotcache" value="1" id="nocache" /><!--Forca nao cachear se nada selecioando-->
+            	    <label class="form-check-label" for="cache"><small>Salvar meu login</small></label>
+        	</div>
+            #end
+	    <!--Controle de atributos - Forcando sempre-->
+            <input type="hidden" id="_shib_idp_revokeConsent" name="_shib_idp_revokeConsent" value="true" />
+            #if ($passwordEnabled)
+        	<button type="submit" class="btn btn-primary btn-block mb-1" name="_eventId_proceed" onClick="this.childNodes[0].nodeValue='#springMessageText("idp.login.pleasewait", "Realizando login...")';if(document.getElementById('cache').checked){  document.getElementById('nocache').disabled = true;}">#springMessageText("idp.login.login", "Entrar")</button>
+            #end
+            #foreach ($extFlow in $extendedAuthenticationFlows)
+		#if ($authenticationContext.isAcceptable($extFlow) and $extFlow.test(profileRequestContext))
+        	    <button type="submit" class="btn btn-primary btn-block mb-1" name="_eventId_$extFlow.getId()"><!--id no lugar de class? na versao original-->
+            	    #springMessageText("idp.login.$extFlow.getId().replace('authn/','')", $extFlow.getId().replace('authn/',''))
+            	    </button>
+        	#end
+            #end
+	    <p>
+		#set ($url=$springMacroRequestContext.getMessage("idp.url.password.reset", ""))
+		#if ($url!= "")
+        	    <small><a href="$url" class="text-primary">Recuperar senha</a></small><br>
+		#end
+	    </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

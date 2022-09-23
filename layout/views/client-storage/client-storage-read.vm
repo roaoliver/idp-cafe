@@ -1,0 +1,47 @@
+##
+## Velocity template to read from local storage.
+##
+## Velocity context will contain the following properties
+## flowExecutionUrl - the form action location
+## flowRequestContext - the Spring Web Flow RequestContext
+## flowExecutionKey - the SWF execution key (this is built into the flowExecutionUrl)
+## profileRequestContext - root of context tree
+## loadContext - context with details about the storage keys to load
+## encoder - HTMLEncoder class
+## request - HttpServletRequest
+## response - HttpServletResponse
+## environment - Spring Environment object for property resolution
+#set ($title = $springMacroRequestContext.getMessage("idp.title", "Web Login Service"))
+#set ($titleSuffix = $springMacroRequestContext.getMessage("idp.client-storage-read.suffix", "Carregando"))
+##
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>$title - $titleSuffix</title>
+        <link rel="stylesheet" type="text/css" href="$request.getContextPath()/api/bootstrap/4.1.3/css/bootstrap.min.css">
+  	<link rel="stylesheet" type="text/css" href="$request.getContextPath()/css/restyles.css" type="text/css">
+  	<link rel="stylesheet" type="text/css" href="$request.getContextPath()/api/font-awesome/4.7.0/css/font-awesome.min.css">
+        <script>
+        <!--
+        #include( "client-storage/local-storage-read.js" )
+        // -->
+        </script>
+    </head>
+    <body class="bg-light login-idp" onload="doLoad()">
+	<div class="bg-light">
+	  <div class="container text-center py-5">
+	    <div class="container rounded border p-5 bg-white shadow text-center text-muted col-lg-6">
+		<p>$springMacroRequestContext.getMessage("idp.client-storage-read.text", "Loading login session information from the browser...")</p>  
+		<noscript>
+                    <p>
+                    $springMacroRequestContext.getMessage("idp.client-storage.no-js", "Since your browser does not support JavaScript, you must press the Continue button once to proceed.")
+                    </p>
+                </noscript>
+                #parse( "client-storage/read.vm" )
+	    </div>
+	  </div>
+	</div>
+    </body>
+</html>
+

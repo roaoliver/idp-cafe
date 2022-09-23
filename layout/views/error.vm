@@ -1,0 +1,67 @@
+##
+## Velocity Template for error end-state
+##
+## Velocity context will contain the following properties
+## flowRequestContext - the Spring Web Flow RequestContext
+## profileRequestContext - root of context tree
+## encoder - HTMLEncoder class
+## request - HttpServletRequest
+## response - HttpServletResponse
+## environment - Spring Environment object for property resolution
+## custom - arbitrary object injected by deployer
+##
+#set ($title = $springMacroRequestContext.getMessage("idp.title", "Web Login Service"))
+#set ($defaultTitleSuffix = $springMacroRequestContext.getMessage("idp.title.suffix", "Erro"))
+##
+#if ($flowRequestContext)
+	## This handles flow events, the most common case.
+    #set ($eventId = $flowRequestContext.getCurrentEvent().getId())
+    #set ($eventKey = $springMacroRequestContext.getMessage("$eventId", "error"))
+    #set ($titleSuffix = $springMacroRequestContext.getMessage("${eventKey}.title", "$defaultTitleSuffix"))
+    #set ($message = $springMacroRequestContext.getMessage("${eventKey}.message", "$defaultTitleSuffix: $eventId"))
+    #if ($eventId == "AccessDenied" or $eventId == "ContextCheckDenied")
+        $response.setStatus(403)
+    #elseif ($eventId == "AttributeReleaseRejected" || $eventId == "TermsRejected")
+        $response.setStatus(200)
+    #elseif ($eventKey == "unexpected" || $eventKey == "runtime-error" || $eventKey == "error")
+        $response.setStatus(500)
+    #else
+        $response.setStatus(400)
+    #end
+#elseif ($exception)
+	## This handles exceptions that reach the Spring-MVC exception handler.
+    #set ($eventId = $exception.getClass().getSimpleName())
+    #set ($eventKey = $springMacroRequestContext.getMessage("$eventId", "error"))
+    #set ($titleSuffix = $springMacroRequestContext.getMessage("${eventKey}.title", "$defaultTitleSuffix"))
+    #set ($message = $springMacroRequestContext.getMessage("${eventKey}.message", "$defaultTitleSuffix: $eventId"))
+    $response.setStatus(500)
+#else
+	## This is a catch-all that theoretically shouldn't happen?
+    #set ($titleSuffix = $defaultTitleSuffix)
+    #set ($message = $springMacroRequestContext.getMessage("idp.message", "An unidentified error occurred."))
+    $response.setStatus(500)
+#end
+##
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>$title - $titleSuffix</title>
+  <link rel="stylesheet" type="text/css" href="$request.getContextPath()/api/bootstrap/4.1.3/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="$request.getContextPath()/css/restyles.css" type="text/css">
+  <link rel="stylesheet" type="text/css" href="$request.getContextPath()/api/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body  class="bg-light login-idp">
+  <div class="bg-light">
+    <div class="container text-center py-5">
+      <div class="container rounded border p-5 bg-white shadow text-center text-muted col-lg-6">
+        <p class="mb-0">Acesso pela instituição:</p>
+        <div class="login-logo text-center mb-3"><img src="$request.getContextPath()#springMessageText("idp.logo")" alt="#springMessageText("idp.logo.alt-text", "logo")"></div>
+	<p class="font-weight-bold text-body my-3"><i class="fa fa-times-circle text-danger" style="font-size:1.5em"></i> $title - $titleSuffix</p>
+        <p>#evaluate($message)</p>  
+      </div>
+    </div>
+  </div>
+</body>
+</html>
