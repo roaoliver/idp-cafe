@@ -1,7 +1,7 @@
 FROM ronanoliveira/cafe:0.1
 
     # adicione um ip válido
-ENV IP=20.10.2.3 \
+ENV IP=172.16.0.2 \
     # adicione nome host
     HN=idp \
     # adicione dominio
@@ -42,17 +42,40 @@ ENV CONTACT='Ronan Oliveira de Andrade' \
     CITY='Teresina' \
     UF='PI'
 
-#COPY layout/edit-webapp/* /opt/shibboleth-idp/edit-webapp/
-#COPY layout/messages/* /opt/shibboleth-idp/messages/
-#COPY layout/views/* /opt/shibboleth-idp/views/
+ENV TZ="America/Fortaleza"
 
-WORKDIR /root
+# Configura timezone e linguagem e dependências 
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 EXPOSE 80 443 5666
 
-RUN bash firstboot.sh
+# edit the default Apache config to enable some modules and disable things we don't want
+RUN sed -i \
+  -e '/LoadModule proxy_module/s/^#//g' \
+  -e '/LoadModule proxy_http_module/s/^#//g' \
+  -e '/LoadModule rewrite_module/s/^#//g' \
+	-e 's/^#\(Include .*httpd-ssl.conf\)/\1/' \
+	-e 's/^#\(LoadModule .*mod_ssl.so\)/\1/' \
+	-e 's/^#\(LoadModule .*mod_socache_shmcb.so\)/\1/' \
+  -e '/ServerAdmin/s/^/#/g' \
+  -e '/httpd-vhosts.conf/s/^#//g' \
+  /usr/local/apache2/conf/httpd.conf
 
-CMD ["/usr/bin/supervisord"]
+# apagar página default html
+RUN rm /usr/local/apache2/htdocs/index.html
+
+# para utilizar logo da instituição, copiar imagem para esta pasta com nome e formato .png: logo-instituicao.png
+COPY logo/logo-instituicao.png /opt/shibboleth-idp/edit-webapp/images
+
+# configuração idp com variáveis fornecidas
+RUN /usr/local/bin/init-configs
+
+# Para utilizar certificado válido adicione a chave e certificado na pasta cert, e descomente as duas linhas COPY
+# Obs.: Copiar a chave e certificado para dentro da pasta com respectivo nome: chave.key e certificado.crt
+#COPY cert/chave-apache.key /etc/ssl/private
+#COPY cert/certificado-apache.crt /etc/ssl/certs
+
+CMD ["supervisord","-c","/etc/supervisor/conf.d/run-idp.conf"]
 
 HEALTHCHECK --interval=3m --timeout=30s \
   CMD curl -k -f http://localhost:8080/idp/status || exit 1
