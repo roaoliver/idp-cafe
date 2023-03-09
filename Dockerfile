@@ -47,7 +47,7 @@ ENV TZ="America/Fortaleza"
 # Configura timezone e linguagem e dependências 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-EXPOSE 80 443 5666
+EXPOSE 80 443
 
 # edit the default Apache config to enable some modules and disable things we don't want
 RUN sed -i \
